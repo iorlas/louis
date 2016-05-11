@@ -46,11 +46,11 @@ class Mapper(object):
         validated_data = {}
         fields = fields or (
             field
-            for field in self.__class__.__dict__
-            if not field.startswith('__') and not field[0].isupper()
+            for field in dir(self.__class__)
+            if not field in dir(Mapper)  # exclude common stuff
         )
         for field in fields:
-            value = self.__class__.__dict__[field]
+            value = getattr(self.__class__, field)
 
             if isinstance(value, Mapper):
                 pass
