@@ -28,3 +28,14 @@ class SimpleManyMapper(Mapper):
 
     external_id = '@id', int
     a = '@a'
+
+
+
+class SimpleMapperWithExternalID(Mapper):
+    class Meta:
+        source = 'item'
+        many = False
+        external_id_field = 'external_id'
+
+    external_id = '@id', int
+    a = '@a'
