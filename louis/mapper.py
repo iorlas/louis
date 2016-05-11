@@ -8,6 +8,10 @@ class Mapper(object):
         many = True
         external_id_field = 'external_id'
 
+    @property
+    def is_many_mode(self):
+        return getattr(self.Meta, 'many', True) and not self.is_many_instance
+
     def __init__(self, data, parent=None, is_many_instance=False):
         self.data = data
         self.is_many_instance = is_many_instance
@@ -15,13 +19,13 @@ class Mapper(object):
             self.data = self.data.get(self.Meta.source, many=getattr(self.Meta, 'many', True))
 
     def process(self):
-        if getattr(self.Meta, 'many', True) and not self.is_many_instance:
-            return [self.__class__(row, single=True).process() for row in self.data]
+        if self.is_many_mode:
+            return [self.__class__(row, is_many_instance=True).process() for row in self.data]
         return self._process_item()
 
     def get_external_id(self):
-        if getattr(self.Meta, 'many', True) and not self.is_many_instance:
-            return [self.__class__(row, single=True).get_external_id() for row in self.data]
+        if self.is_many_mode:
+            return [self.__class__(row, is_many_instance=True).get_external_id() for row in self.data]
         if self.Meta.external_id_field:
             return self.gather_data(fields=[self.Meta.external_id_field])[self.Meta.external_id_field]
 
@@ -36,6 +40,9 @@ class Mapper(object):
         self.save()
 
     def gather_data(self, fields=None):
+        if self.is_many_mode:
+            return [self.__class__(row, is_many_instance=True).gather_data(fields=fields) for row in self.data]
+
         validated_data = {}
         fields = fields or (
             field
