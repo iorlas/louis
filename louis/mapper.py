@@ -23,10 +23,10 @@ class Mapper(object):
             return [self.__class__(row, is_many_instance=True).process() for row in self.data]
         return self._process_item()
 
-    def get_external_id(self):
+    def gather_external_id(self):
         if self.is_many_mode:
-            return [self.__class__(row, is_many_instance=True).get_external_id() for row in self.data]
-        if self.Meta.external_id_field:
+            return [self.__class__(row, is_many_instance=True).gather_external_id() for row in self.data]
+        if hasattr(self.Meta, 'external_id_field'):
             return self.gather_data(fields=[self.Meta.external_id_field])[self.Meta.external_id_field]
 
     def _process_item(self, data):
