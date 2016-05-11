@@ -16,9 +16,17 @@ class Mapper(object):
         if self.source:
             self.data = self.data.get(self.source, many=self.many)
 
-    def gather_external_id(self):
-        if getattr(self, 'external_id_field', None):
-            return self.gather_data(fields=[self.external_id_field])[self.external_id_field]
+    def get_model_instance(self):
+        external_id = self.get_external_id()
+        result = getattr(self, 'context', {}).get(self.model, {}).get(external_id)
+        return result
+
+    def get_external_id(self):
+        if not getattr(self, 'external_id_field', None):
+            return None
+        if not getattr(self, 'validated_data', None):
+            self.gather_data(fields=[self.external_id_field])[self.external_id_field]
+        return self.validated_data[self.external_id_field]
 
     def process(self):
         external_id = self.get_external_id()
@@ -32,7 +40,7 @@ class Mapper(object):
         self.save()
 
     def gather_data(self, fields=None):
-        self.validated_data = {}
+        self.validated_data = getattr(self, 'validated_data', {})
         fields = fields or (
             field
             for field in dir(self.__class__)
@@ -67,13 +75,13 @@ class CollectionMapper(Mapper):
             ]
         return super(CollectionMapper, self).process()
 
-    def gather_external_id(self):
+    def get_external_id(self):
         if self.many:
             return [
-                self.__class__(row, many=False, source=None, **self.kwargs).gather_external_id()
+                self.__class__(row, many=False, source=None, **self.kwargs).get_external_id()
                 for row in self.data
             ]
-        return super(CollectionMapper, self).gather_external_id()
+        return super(CollectionMapper, self).get_external_id()
 
     def gather_data(self, *args, **kwargs):
         if self.many:
