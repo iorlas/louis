@@ -3,35 +3,27 @@ from __future__ import unicode_literals, division
 
 
 class Mapper(object):
-    class Meta:
-        source = None
-        many = True
-        external_id_field = 'external_id'
+    source = None
+    external_id_field = None
+    many = False
 
-    @property
-    def is_many_mode(self):
-        return getattr(self.Meta, 'many', True) and not self.is_many_instance
-
-    def __init__(self, data, parent=None, is_many_instance=False):
+    def __init__(self, data, **kwargs):
         self.data = data
-        self.is_many_instance = is_many_instance
-        if getattr(self.Meta, 'source', None) and not self.is_many_instance:
-            self.data = self.data.get(self.Meta.source, many=getattr(self.Meta, 'many', True))
 
-    def process(self):
-        if self.is_many_mode:
-            return [self.__class__(row, is_many_instance=True).process() for row in self.data]
-        return self._process_item()
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+
+        if self.source:
+            self.data = self.data.get(self.source, many=self.many)
 
     def gather_external_id(self):
-        if self.is_many_mode:
-            return [self.__class__(row, is_many_instance=True).gather_external_id() for row in self.data]
-        if hasattr(self.Meta, 'external_id_field'):
-            return self.gather_data(fields=[self.Meta.external_id_field])[self.Meta.external_id_field]
+        if getattr(self, 'external_id_field', None):
+            return self.gather_data(fields=[self.external_id_field])[self.external_id_field]
 
-    def _process_item(self, data):
+    def process(self):
         external_id = self.get_external_id()
-        if self.get_external_id() is not None:
+        self.instance = None
+        if external_id is not None:
             self.instance = self.Meta.model.objects.filter(**{
                 self.Meta.external_id_field: external_id
             }).first()
@@ -40,10 +32,7 @@ class Mapper(object):
         self.save()
 
     def gather_data(self, fields=None):
-        if self.is_many_mode:
-            return [self.__class__(row, is_many_instance=True).gather_data(fields=fields) for row in self.data]
-
-        validated_data = {}
+        self.validated_data = {}
         fields = fields or (
             field
             for field in dir(self.__class__)
@@ -53,12 +42,43 @@ class Mapper(object):
             value = getattr(self.__class__, field)
 
             if isinstance(value, Mapper):
-                pass
+                self.validated_data[field] = value(self.data, parent=self).process()
             else:
                 query, processor = value if isinstance(value, tuple) else (value, None)
                 if callable(query):
                     query = query()
                 new_value = self.data.get(query).data
-                validated_data[field] = processor(new_value) if processor else new_value
+                self.validated_data[field] = processor(new_value) if processor else new_value
+        return self.validated_data
 
-        return validated_data
+
+class CollectionMapper(Mapper):
+    many = True
+
+    def __init__(self, data, **kwargs):
+        self.kwargs = kwargs
+        super(CollectionMapper, self).__init__(data, **kwargs)
+
+    def process(self):
+        if self.many:
+            return [
+                self.__class__(row, many=False, source=None, **self.kwargs).process()
+                for row in self.data
+            ]
+        return super(CollectionMapper, self).process()
+
+    def gather_external_id(self):
+        if self.many:
+            return [
+                self.__class__(row, many=False, source=None, **self.kwargs).gather_external_id()
+                for row in self.data
+            ]
+        return super(CollectionMapper, self).gather_external_id()
+
+    def gather_data(self, *args, **kwargs):
+        if self.many:
+            return [
+                self.__class__(row, many=False, source=None, **self.kwargs).gather_data(*args, **kwargs)
+                for row in self.data
+            ]
+        return super(CollectionMapper, self).gather_data(*args, **kwargs)
