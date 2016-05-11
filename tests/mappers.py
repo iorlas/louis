@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 from louis.mapper import Mapper, CollectionMapper
+from tests.models import SimpleModel
 
 
 class SimpleMapper(Mapper):
@@ -38,3 +39,10 @@ class SimpleManyMapperWithExternalID(CollectionMapper):
 
     external_id = '@id', int
     a = '@a'
+
+
+class SimpleModelMapper(Mapper):
+    model = SimpleModel
+    external_id_field = 'external_id'
+
+    external_id = '@id', int
