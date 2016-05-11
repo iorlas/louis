@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
+from django.utils.functional import cached_property
 
 
 class Mapper(object):
@@ -16,17 +17,22 @@ class Mapper(object):
         if self.source:
             self.data = self.data.get(self.source, many=self.many)
 
-    def get_model_instance(self):
+    @cached_property
+    def instance(self):
         external_id = self.get_external_id()
-        result = getattr(self, 'context', {}).get(self.model, {}).get(external_id)
-        return result
+        instance = None
+        if external_id is not None:
+            instance = getattr(self, 'context', {}).get(self.model, {}).get(external_id)
+            if not instance:
+                instance = self.model.objects.filter(**{self.external_id_field: external_id}).first()
+        return instance or self.model()
 
     def get_external_id(self):
         if not getattr(self, 'external_id_field', None):
             return None
         if not getattr(self, 'validated_data', None):
             self.gather_data(fields=[self.external_id_field])[self.external_id_field]
-        return self.validated_data[self.external_id_field]
+        return self.validated_data.get(self.external_id_field)
 
     def process(self):
         external_id = self.get_external_id()
