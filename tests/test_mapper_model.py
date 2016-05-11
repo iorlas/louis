@@ -10,7 +10,7 @@ from .models import SimpleModel
 class MapperModelInstanceTest(TestCase):
     def test_will_search_for_model_in_context_first(self):
         backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
-                <item id="1" a="bcd" />
+            <item id="1" a="bcd" />
         '''.encode())
 
         instance = SimpleModel(external_id=1)
@@ -24,7 +24,7 @@ class MapperModelInstanceTest(TestCase):
 
     def test_will_search_in_db_by_external_id(self):
         backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
-                <item id="3" a="bcd" />
+            <item id="3" a="bcd" />
         '''.encode())
 
         SimpleModel.objects.create(external_id=5)
@@ -37,7 +37,7 @@ class MapperModelInstanceTest(TestCase):
 
     def test_will_create_new_instance_when_nothing_is_found(self):
         backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
-                <item id="3" a="bcd" />
+            <item id="3" a="bcd" />
         '''.encode())
 
         mapper = SimpleModelMapper(backend_data)
