@@ -19,3 +19,12 @@ class SimpleProcessorMapper(Mapper):
 
     external_id = '@id', int
     a = '@a', lambda v: v.split()
+
+
+class SimpleManyMapper(Mapper):
+    class Meta:
+        source = 'item'
+        many = True
+
+    external_id = '@id', int
+    a = '@a'
