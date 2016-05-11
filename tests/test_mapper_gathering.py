@@ -3,7 +3,7 @@ from __future__ import unicode_literals, division
 
 from django.test import TestCase
 from louis.backends.xml import Backend
-from .mappers import SimpleMapper, SimpleProcessorMapper, SimpleManyMapper, SimpleMapperWithExternalID
+from .mappers import SimpleMapper, SimpleProcessorMapper, SimpleManyMapper, SimpleMapperWithExternalID, SimpleManyMapperWithExternalID
 
 
 class MapperGatheringTest(TestCase):
@@ -69,3 +69,15 @@ class MapperExternalIDGatheringTest(TestCase):
         mapper = SimpleMapperWithExternalID(backend_data)
         data = mapper.gather_external_id()
         self.assertEqual(data, 1)
+
+    def test_many_mode(self):
+        backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <feed>
+                <item id="1" />
+                <item id="2" />
+            </feed>
+        '''.encode())
+
+        mapper = SimpleManyMapperWithExternalID(backend_data)
+        data = mapper.gather_external_id()
+        self.assertEqual(data, [1, 2])

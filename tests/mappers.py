@@ -30,7 +30,6 @@ class SimpleManyMapper(Mapper):
     a = '@a'
 
 
-
 class SimpleMapperWithExternalID(Mapper):
     class Meta:
         source = 'item'
@@ -39,3 +38,8 @@ class SimpleMapperWithExternalID(Mapper):
 
     external_id = '@id', int
     a = '@a'
+
+
+class SimpleManyMapperWithExternalID(SimpleMapperWithExternalID):
+    class Meta(SimpleMapperWithExternalID.Meta):
+        many = True
