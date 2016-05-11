@@ -6,30 +6,52 @@ class Mapper(object):
     class Meta:
         source = None
         many = True
+        external_id_field = 'external_id'
 
-    def __init__(self, data, parent=None):
+    def __init__(self, data, parent=None, is_many_instance=False):
         self.data = data
-        if getattr(self.Meta, 'source', None):
-            self.data = self.data.get(self.Meta.source)
+        self.is_many_instance = is_many_instance
+        if getattr(self.Meta, 'source', None) and not self.is_many_instance:
+            self.data = self.data.get(self.Meta.source, many=getattr(self.Meta, 'many', True))
 
     def process(self):
-        if getattr(self.Meta, 'many', True):
-            return map(self._process_item, self.data)
-        return self._process_item(self.data)
+        if getattr(self.Meta, 'many', True) and not self.is_many_instance:
+            return [self.__class__(row, single=True).process() for row in self.data]
+        return self._process_item()
+
+    def get_external_id(self):
+        if getattr(self.Meta, 'many', True) and not self.is_many_instance:
+            return [self.__class__(row, single=True).get_external_id() for row in self.data]
+        if self.Meta.external_id_field:
+            return self.gather_data(fields=[self.Meta.external_id_field])[self.Meta.external_id_field]
 
     def _process_item(self, data):
-        mapped_data = {}
-        for field, val in self.__class__.__dict__.iteritems():
-            if field.startswith('__') or field[0].isupper():
-                continue
+        external_id = self.get_external_id()
+        if self.get_external_id() is not None:
+            self.instance = self.Meta.model.objects.filter(**{
+                self.Meta.external_id_field: external_id
+            }).first()
+        if not self.instance:
+            self.instance = self.Meta.model(self.gather_data())
+        self.save()
 
-            if isinstance(val, Mapper):
+    def gather_data(self, fields=None):
+        validated_data = {}
+        fields = fields or (
+            field
+            for field in self.__class__.__dict__
+            if not field.startswith('__') and not field[0].isupper()
+        )
+        for field in fields:
+            value = self.__class__.__dict__[field]
+
+            if isinstance(value, Mapper):
                 pass
             else:
-                query, processor = val if isinstance(val, tuple) else (val, None)
+                query, processor = value if isinstance(value, tuple) else (value, None)
                 if callable(query):
                     query = query()
-                new_value = data.get(query).data
-                mapped_data[field] = processor(new_value) if processor else new_value
+                new_value = self.data.get(query).data
+                validated_data[field] = processor(new_value) if processor else new_value
 
-        # self._save(self, mapped_data)
+        return validated_data
