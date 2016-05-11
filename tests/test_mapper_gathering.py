@@ -56,7 +56,7 @@ class MapperExternalIDGatheringTest(TestCase):
         '''.encode())
 
         mapper = SimpleMapper(backend_data)
-        data = mapper.gather_external_id()
+        data = mapper.get_external_id()
         self.assertEqual(data, None)
 
     def test_gathers_external_id_only(self):
@@ -67,7 +67,7 @@ class MapperExternalIDGatheringTest(TestCase):
         '''.encode())
 
         mapper = SimpleMapperWithExternalID(backend_data)
-        data = mapper.gather_external_id()
+        data = mapper.get_external_id()
         self.assertEqual(data, 1)
 
     def test_many_mode(self):
@@ -79,5 +79,5 @@ class MapperExternalIDGatheringTest(TestCase):
         '''.encode())
 
         mapper = SimpleManyMapperWithExternalID(backend_data)
-        data = mapper.gather_external_id()
+        data = mapper.get_external_id()
         self.assertEqual(data, [1, 2])
