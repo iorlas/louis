@@ -18,8 +18,13 @@ class Mapper(object):
 
         self.context = getattr(self, 'context', {})
 
+        if hasattr(self, 'get_data'):
+            self.data = self.get_data()
         if self.source:
-            self.data = self.data.get(self.source, many=self.many)
+            self.data = self.data.get(
+                self.source() if callable(self.source) else self.source,
+                many=self.many
+            )
 
     @cached_property
     def instance(self):
