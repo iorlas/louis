@@ -45,6 +45,16 @@ class MapperModelInstanceTest(TestCase):
             self.assertEqual(mapper.instance.id, None)
             self.assertIsInstance(mapper.instance, SimpleModel)
 
+    def test_populates_context_with_instance(self):
+        backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <item id="3" a="bcd" />
+        '''.encode())
+
+        context = {}
+        mapper = SimpleModelMapper(backend_data, context=context)
+        mapper.instance
+        self.assertIsInstance(context[SimpleModel][3], SimpleModel)
+
 
 class MapperModelInstanceSaveTest(TestCase):
     def test_saves_new_instance_in_db(self):

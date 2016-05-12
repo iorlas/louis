@@ -26,7 +26,11 @@ class Mapper(object):
             instance = getattr(self, 'context', {}).get(self.model, {}).get(external_id)
             if not instance:
                 instance = self.model.objects.filter(**{self.external_id_field: external_id}).first()
-        return instance or self.model()
+        instance = instance or self.model()
+
+        if hasattr(self, 'context') and external_id:
+            self.context.setdefault(self.model, {})[external_id] = instance
+        return instance
 
     def get_external_id(self):
         if not getattr(self, 'external_id_field', None):
