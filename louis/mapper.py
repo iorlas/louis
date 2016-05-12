@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 from django.utils.functional import cached_property
-from django.db.models import ManyToOneRel, ManyToManyRel
+from django.db.models import ManyToOneRel, ManyToManyRel, ForeignKey
 
 
 class Mapper(object):
@@ -63,6 +63,7 @@ class Mapper(object):
                 value.process(**{
                     reverse_field_name: self.instance
                 })
+        return self.instance
 
     def gather_data(self, fields=None):
         self.validated_data = getattr(self, 'validated_data', {})
@@ -81,8 +82,8 @@ class Mapper(object):
                 model_field = self.model._meta.get_field(field)
                 if isinstance(model_field, (ManyToOneRel, ManyToManyRel)):
                     pass
-                else:
-                    raise Exception('...')
+                elif isinstance(model_field, ForeignKey):
+                    self.validated_data[field] = self.validated_data[field].process()
 
             # process model fields
             else:

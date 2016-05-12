@@ -77,11 +77,26 @@ class SimpleModelWithNestedMapper(Mapper):
         b = '@b'
 
 
-class InvertedNestedModel(Mapper):
+class InvertedNestedMapper(Mapper):
     model = SimpleNestedModel
     b = '@b'
 
     class simple(Mapper):
+        source = 'item'
+        model = SimpleModel
+        external_id_field = 'external_id'
+
+        external_id = '@id', int
+        a = '@a'
+
+
+class InvertedNestedManyMapper(CollectionMapper):
+    source = 'nested'
+    model = SimpleNestedModel
+    b = '@b'
+
+    class simple(Mapper):
+        source = 'item'
         model = SimpleModel
         external_id_field = 'external_id'
 
