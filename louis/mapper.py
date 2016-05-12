@@ -91,10 +91,10 @@ class Mapper(object):
                     self.validated_data[field] = self.validated_data[field].process()
 
             # process model fields
+            elif callable(value):
+                self.validated_data[field] = value(self)
             else:
                 query, processor = value if isinstance(value, tuple) else (value, None)
-                if callable(query):
-                    query = query()
                 new_value = self.data.get(query).data
                 self.validated_data[field] = processor(new_value) if processor else new_value
         return self.validated_data

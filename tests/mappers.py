@@ -18,6 +18,13 @@ class SimpleProcessorMapper(Mapper):
     a = '@a', lambda v: v.split()
 
 
+class SimpleCallableMapper(Mapper):
+    source = 'item'
+
+    external_id = '@id', int
+    c = lambda s: [s.data.get('@a').data, s.data.get('@b').data]
+
+
 class SimpleManyMapper(CollectionMapper):
     source = 'item'
 
