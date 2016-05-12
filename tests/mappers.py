@@ -52,3 +52,12 @@ class SimpleModelMapper(Mapper):
 class SimpleModelWOExternalIDMapper(Mapper):
     model = SimpleModel
     a = '@a'
+
+
+class SimpleModelManyMapper(CollectionMapper):
+    source = 'item'
+    model = SimpleModel
+    external_id_field = 'external_id'
+
+    external_id = '@id', int
+    a = '@a'

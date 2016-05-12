@@ -3,7 +3,7 @@ from __future__ import unicode_literals, division
 
 from django.test import TestCase
 from louis.backends.xml import Backend
-from .mappers import SimpleModelMapper, SimpleModelWOExternalIDMapper
+from .mappers import SimpleModelMapper, SimpleModelWOExternalIDMapper, SimpleModelManyMapper
 from .models import SimpleModel
 
 
@@ -101,3 +101,18 @@ class MapperModelInstanceSaveTest(TestCase):
         mapper = SimpleModelMapper(backend_data)
         with self.assertNumQueries(1):
             mapper.process()
+
+    def test_saves_multiple_mappers(self):
+        backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <feed>
+                <item id="1" a="bcd" />
+                <item id="23" a="dawd" />
+            </feed>
+        '''.encode())
+        mapper = SimpleModelManyMapper(backend_data)
+        with self.assertNumQueries(2*2):
+            mapper.process()
+
+        self.assertEqual(SimpleModel.objects.get(external_id=1).a, "bcd")
+        self.assertEqual(SimpleModel.objects.get(external_id=23).a, "dawd")
+
