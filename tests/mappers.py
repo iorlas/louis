@@ -46,3 +46,4 @@ class SimpleModelMapper(Mapper):
     external_id_field = 'external_id'
 
     external_id = '@id', int
+    a = '@a'
