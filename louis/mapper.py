@@ -4,6 +4,7 @@ from django.utils.functional import cached_property
 
 
 class Mapper(object):
+    model = None
     source = None
     external_id_field = None
     many = False
@@ -35,15 +36,10 @@ class Mapper(object):
         return self.validated_data.get(self.external_id_field)
 
     def process(self):
-        external_id = self.get_external_id()
-        self.instance = None
-        if external_id is not None:
-            self.instance = self.Meta.model.objects.filter(**{
-                self.Meta.external_id_field: external_id
-            }).first()
-        if not self.instance:
-            self.instance = self.Meta.model(self.gather_data())
-        self.save()
+        if not self.instance.pk:
+            for field, value in self.gather_data().iteritems():
+                setattr(self.instance, field, value)
+            self.instance.save()
 
     def gather_data(self, fields=None):
         self.validated_data = getattr(self, 'validated_data', {})
