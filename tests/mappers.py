@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 from louis.mapper import Mapper, CollectionMapper
-from tests.models import SimpleModel
+from tests.models import SimpleModel, SimpleNestedModel
 
 
 class SimpleMapper(Mapper):
@@ -61,3 +61,29 @@ class SimpleModelManyMapper(CollectionMapper):
 
     external_id = '@id', int
     a = '@a'
+
+
+class SimpleModelWithNestedMapper(Mapper):
+    model = SimpleModel
+    external_id_field = 'external_id'
+
+    external_id = '@id', int
+    a = '@a'
+
+    class nested(CollectionMapper):
+        source = 'nested'
+        model = SimpleNestedModel
+
+        b = '@b'
+
+
+class InvertedNestedModel(Mapper):
+    model = SimpleNestedModel
+    b = '@b'
+
+    class simple(Mapper):
+        model = SimpleModel
+        external_id_field = 'external_id'
+
+        external_id = '@id', int
+        a = '@a'

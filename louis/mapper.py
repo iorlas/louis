@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 from django.utils.functional import cached_property
+from django.db.models import ManyToOneRel, ManyToManyRel
 
 
 class Mapper(object):
@@ -15,6 +16,8 @@ class Mapper(object):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
+        self.context = getattr(self, 'context', {})
+
         if self.source:
             self.data = self.data.get(self.source, many=self.many)
 
@@ -23,12 +26,12 @@ class Mapper(object):
         external_id = self.get_external_id()
         instance = None
         if external_id is not None:
-            instance = getattr(self, 'context', {}).get(self.model, {}).get(external_id)
+            instance = self.context.get(self.model, {}).get(external_id)
             if not instance:
                 instance = self.model.objects.filter(**{self.external_id_field: external_id}).first()
         instance = instance or self.model()
 
-        if hasattr(self, 'context') and external_id:
+        if external_id:
             self.context.setdefault(self.model, {})[external_id] = instance
         return instance
 
@@ -39,24 +42,49 @@ class Mapper(object):
             self.gather_data(fields=[self.external_id_field])[self.external_id_field]
         return self.validated_data.get(self.external_id_field)
 
-    def process(self):
+    def process(self, **additional_data):
         if not self.instance.pk:
+            for field, value in additional_data.iteritems():
+                setattr(self.instance, field, value)
+
             for field, value in self.gather_data().iteritems():
+                # skip relations, which should be saved after instance save
+                if isinstance(value, Mapper):
+                    continue
                 setattr(self.instance, field, value)
             self.instance.save()
+
+            # relations, which could be save after instance save
+            for field, value in self.gather_data().iteritems():
+                # filter only post-instance-save relations
+                if not isinstance(value, Mapper):
+                    continue
+                reverse_field_name = self.model._meta.get_field(field).field.name
+                value.process(**{
+                    reverse_field_name: self.instance
+                })
 
     def gather_data(self, fields=None):
         self.validated_data = getattr(self, 'validated_data', {})
         fields = fields or (
             field
             for field in dir(self.__class__)
-            if not field in dir(Mapper)  # exclude common stuff
+            if field not in dir(Mapper)  # exclude common stuff
         )
         for field in fields:
             value = getattr(self.__class__, field)
 
-            if isinstance(value, Mapper):
-                self.validated_data[field] = value(self.data, parent=self).process()
+            # process relations
+            if isinstance(value, type) and issubclass(value, Mapper):
+                self.validated_data[field] = value(self.data, parent=self, context=self.context)
+
+                model_field = self.model._meta.get_field(field)
+                if isinstance(model_field, (ManyToOneRel, ManyToManyRel)):
+                    pass
+                else:
+                    raise Exception('...')
+
+            # process model fields
             else:
                 query, processor = value if isinstance(value, tuple) else (value, None)
                 if callable(query):
@@ -73,13 +101,13 @@ class CollectionMapper(Mapper):
         self.kwargs = kwargs
         super(CollectionMapper, self).__init__(data, **kwargs)
 
-    def process(self):
+    def process(self, **kwargs):
         if self.many:
             return [
-                self.__class__(row, many=False, source=None, **self.kwargs).process()
+                self.__class__(row, many=False, source=None, **self.kwargs).process(**kwargs)
                 for row in self.data
             ]
-        return super(CollectionMapper, self).process()
+        return super(CollectionMapper, self).process(**kwargs)
 
     def get_external_id(self):
         if self.many:
