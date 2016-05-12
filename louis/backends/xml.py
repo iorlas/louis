@@ -41,11 +41,15 @@ class Backend(BaseBackend):
         return cls(etree.fromstring(raw_data))
 
     def get(self, query, many=False):
+        if query.startswith('~'):
+            return self.root.get(query[1:], many=many)
+
         if self.data is None:
             raise LookupError("Cannot look up for '{}' since current data is None".format(query))
+
         found = self.data.xpath(query)
 
         # to return one node
         if many:
-            return [Backend(f) for f in found]
-        return Backend(found[0] if found else None)
+            return [Backend(f, root=self.root) for f in found]
+        return Backend(found[0] if found else None, root=self.root)

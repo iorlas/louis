@@ -8,8 +8,9 @@ class Backend(object):
     def parse(cls, raw_data):
         raise NotImplementedError()
 
-    def __init__(self, data):
+    def __init__(self, data, root=None):
         self.data = data
+        self.root = root or self
 
     def get(self, query, many=False):
         raise NotImplementedError()

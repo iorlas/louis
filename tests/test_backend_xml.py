@@ -52,3 +52,23 @@ class XMLBackendTest(TestCase):
 
         data = backend.get('session/@var').data
         self.assertEqual(data, 'ololo')
+
+    def test_propagates_root_element(self):
+        backend = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <feed version="1.1">
+                <session var="ololo"/>
+            </feed>
+        '''.encode())
+
+        self.assertIs(backend.get('session/@var').root, backend)
+        self.assertIs(backend.get('session/@var', True)[0].root, backend)
+
+    def test_gives_ability_to_make_queries_from_root(self):
+        backend = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <feed version="1.1">
+                <session var="ololo"/>
+            </feed>
+        '''.encode())
+        nested = backend.get('session')
+        self.assertEquals(nested.get('@var').data, 'ololo')
+        self.assertEquals(nested.get('~@version').data, '1.1')
