@@ -47,3 +47,8 @@ class SimpleModelMapper(Mapper):
 
     external_id = '@id', int
     a = '@a'
+
+
+class SimpleModelWOExternalIDMapper(Mapper):
+    model = SimpleModel
+    a = '@a'

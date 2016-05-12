@@ -3,7 +3,7 @@ from __future__ import unicode_literals, division
 
 from django.test import TestCase
 from louis.backends.xml import Backend
-from .mappers import SimpleModelMapper
+from .mappers import SimpleModelMapper, SimpleModelWOExternalIDMapper
 from .models import SimpleModel
 
 
@@ -54,6 +54,29 @@ class MapperModelInstanceTest(TestCase):
         mapper = SimpleModelMapper(backend_data, context=context)
         mapper.instance
         self.assertIsInstance(context[SimpleModel][3], SimpleModel)
+
+
+class MapperModelInstanceWithoutExternalIDTest(TestCase):
+    def test_always_will_create_new_instance_wo_lookups(self):
+        backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <item a="bcd" />
+        '''.encode())
+
+        mapper = SimpleModelWOExternalIDMapper(backend_data)
+        with self.assertNumQueries(0):
+            self.assertEqual(mapper.instance.id, None)
+            self.assertIsInstance(mapper.instance, SimpleModel)
+
+    def test_will_save_it_without_adding_to_context(self):
+        backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <item a="bcd" />
+        '''.encode())
+
+        context = {}
+        mapper = SimpleModelWOExternalIDMapper(backend_data, context=context)
+        with self.assertNumQueries(1):
+            mapper.process()
+            self.assertEqual(context, {})
 
 
 class MapperModelInstanceSaveTest(TestCase):
