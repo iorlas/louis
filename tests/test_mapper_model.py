@@ -45,3 +45,26 @@ class MapperModelInstanceTest(TestCase):
             self.assertEqual(mapper.instance.id, None)
             self.assertIsInstance(mapper.instance, SimpleModel)
 
+
+class MapperModelInstanceSaveTest(TestCase):
+    def test_saves_new_instance_in_db(self):
+        backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <item id="1" a="bcd" />
+        '''.encode())
+
+        mapper = SimpleModelMapper(backend_data)
+        with self.assertNumQueries(2):
+            mapper.process()
+
+        instance = SimpleModel.objects.get(external_id=1)
+        self.assertEqual(instance.a, "bcd")
+
+    def test_will_not_save_again_existing_object(self):
+        backend_data = Backend.parse('''<?xml version="1.0" encoding="utf8"?>
+            <item id="1" a="bcd" />
+        '''.encode())
+
+        instance = SimpleModel.objects.create(external_id=1)
+        mapper = SimpleModelMapper(backend_data)
+        with self.assertNumQueries(1):
+            mapper.process()
